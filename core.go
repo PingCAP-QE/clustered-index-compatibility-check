@@ -32,16 +32,21 @@ func check(ctx context.Context) error {
 	}
 	cnt := 0
 	in := bufio.NewScanner(global.Input)
+loop:
 	for in.Scan() {
 		line := in.Text()
 		tuple := strings.SplitN(line, " ", 2)
 		if len(tuple) != 2 {
 			return errors.Errorf("malformed input line: %q", line)
 		}
-		digests <- [2]string{tuple[0], tuple[1]}
-		cnt += 1
-		if cnt%100 == 0 {
-			log.Printf("%6d tables checked", cnt)
+		select {
+		case digests <- [2]string{tuple[0], tuple[1]}:
+			cnt += 1
+			if cnt%100 == 0 {
+				log.Printf("%6d tables checked", cnt)
+			}
+		case <-ctx.Done():
+			break loop
 		}
 	}
 	close(digests)
